@@ -44,16 +44,6 @@ def _init_db():
     ''' 
     )
 
-    #Data table
-    curr.execute('''
-        CREATE TABLE IF NOT EXISTS extracted_data(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email_id INTEGER,
-                field_name TEXT,
-                field_value TEXT,
-                FOREIGN KEY (email_id) REFERENCES emails (id))
-    '''
-    )
     conn.commit()
     return conn
 
