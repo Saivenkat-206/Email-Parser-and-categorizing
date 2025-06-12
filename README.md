@@ -19,7 +19,7 @@ If that's a bit too much work, just download the zip and extract it
 ### 2. Create .env file
 fill the .env file with
 ```
-IMAP_SERVER='imap.google or outlook.com' # if you use google - gmail else use outlook (basically your domain name)
+IMAP_SERVER='imap.google.com or imap-mail.outlook.com' # if you use google - gmail else use outlook (basically your domain name)
 EMAIL_USER=you@example.com
 EMAIL_PASS=your_email_password_or_app_pass
 ```
