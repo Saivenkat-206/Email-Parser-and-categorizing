@@ -15,6 +15,7 @@ This project automatically pulls emails, analyzes them using NLP (Non-Negative M
 git clone https://github.com/Saivenkat-206/Email-Parser-and-categorizing.git
 cd Email-Parser-and-categorizing
 ```
+If that's a bit too much work, just download the zip and extract it
 ### 2. Create .env file
 fill the .env file with
 ```
