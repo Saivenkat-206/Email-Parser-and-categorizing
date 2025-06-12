@@ -21,6 +21,7 @@ fill the .env file with
 EMAIL_USER=you@example.com
 EMAIL_PASS=your_email_password_or_app_pass
 ```
+Fill your creds in place of the emailID and Password
 ### 3. Setup a virtual environment (optinal)
 ```bash
 python -m venv venv
