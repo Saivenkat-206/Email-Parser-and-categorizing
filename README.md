@@ -19,6 +19,7 @@ If that's a bit too much work, just download the zip and extract it
 ### 2. Create .env file
 fill the .env file with
 ```
+IMAP_SERVER='imap.google or outlook.com' # if you use google - gmail else use outlook (basically your domain name)
 EMAIL_USER=you@example.com
 EMAIL_PASS=your_email_password_or_app_pass
 ```
@@ -33,7 +34,10 @@ Fill your creds in place of the emailID and Password
 6. Copy the 16 character password and paste it.
 #### This is because your password is not secure enough, this setup is necessary
 ### For Outlook:
-1. 
+1. Check outlook settings.
+2. Go to microsoft security basics.
+3. Under security, click Add a new way to sign in.
+4. Choose app passwords and generate one for IMAP access.
 ### 3. Setup a virtual environment (optinal)
 ```bash
 python -m venv venv
