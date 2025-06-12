@@ -23,6 +23,17 @@ EMAIL_USER=you@example.com
 EMAIL_PASS=your_email_password_or_app_pass
 ```
 Fill your creds in place of the emailID and Password
+#### Filling the creds:
+### For Google:
+1. Go to Gmail Settings and enable IMAP access under Forwarding and POP/IMAP.
+2. Login if there is any 2FA enabled.
+3. Now go to account -> security.
+4. Under signing in to google select app passwords.
+5. Choose mail -> other and give it a name if your choice.
+6. Copy the 16 character password and paste it.
+#### This is because your password is not secure enough, this setup is necessary
+### For Outlook:
+1. 
 ### 3. Setup a virtual environment (optinal)
 ```bash
 python -m venv venv
@@ -38,5 +49,4 @@ streamlit run Dashboard.py
 ```
 ## NOTE:
 This is an unsupervised model, so the "departments" are inferred from word distributions. You can fine-tune the model or replace the logic with your own labeled data if needed
-
 
