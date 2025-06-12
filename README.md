@@ -1,12 +1,38 @@
-# Email-Parser-and-categorizing
-Used for getting emails from your account, downloading them and doing some NLP on the body of the email. Uses NMF for the categorization part.
+# Email Categorization Dashboard
+This project automatically pulls emails, analyzes them using NLP (Non-Negative Matrix Factorization), and categorizes them into department-like topics. It also gives you a Streamlit dashboard to visualize trends, keyword importance, and category distribution.
 
-Steps to use:
-1. Download the zip.
-2. Create a virtual environment (optional).
-3. Run `pip install requirements.txt`.
-4. Create a .env file and copy the values from .env.example to there and fill in your creds 
-5. Run `streamlit run Dashboard.py`.
-6. Enter you mailID from where the emails should be downloaded.
-7. The dashboard window will open.
+# Features
+- Pulls and processes emails (body text)  
+- Cleans and vectorizes using TF-IDF  
+- Extracts topics using NMF (unsupervised learning)  
+- Assigns emails to the closest department/topic  
+- Displays everything in a clean interactive dashboard
+
+## Setup
+
+### 1. Clone the project
+```bash
+git clone https://github.com/Saivenkat-206/Email-Parser-and-categorizing.git
+cd Email-Parser-and-categorizing
+```
+### 2. Create .env file
+fill the .env file with
+```
+EMAIL_USER=you@example.com
+EMAIL_PASS=your_email_password_or_app_pass
+```
+### 3. Setup a virtual environment (optinal)
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+### 4. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+Finally run the app:
+```bash
+streamlit run Dashboard.py
+```
 
