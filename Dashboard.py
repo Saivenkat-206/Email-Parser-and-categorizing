@@ -41,7 +41,7 @@ sns.barplot(x=cat_count.index, y=cat_count.values, ax=ax)
 ax.set_title("Email Categories Counting Plot")
 ax.set_xlabel("Category")
 ax.set_ylabel("Count")
-plt.setp(ax.get_xticklabels(), rotation=35, ha='right')
+plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
 st.pyplot(fig)
 
 st.header("Important words by Category")
