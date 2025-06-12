@@ -31,9 +31,11 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```bash
 pip install -r requirements.txt
 ```
-
 ### 5. Finally run the app:
 ```bash
 streamlit run Dashboard.py
 ```
+## NOTE:
+This is an unsupervised model, so the "departments" are inferred from word distributions. You can fine-tune the model or replace the logic with your own labeled data if needed
+
 
