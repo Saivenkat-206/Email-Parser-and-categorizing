@@ -1,5 +1,5 @@
 # Model Comparison: Random Forest vs NMF for Email Categorization
-# This file contains both models with comprehensive evaluation metrics
+# This file contains both models with comprehensive evaluation metrics and visualizations
 
 import re
 import nltk
@@ -15,6 +15,10 @@ from sklearn.metrics import (
 )
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from io import BytesIO
+import base64
 
 nltk.download('stopwords')
 
@@ -92,9 +96,135 @@ def assign_categories_rf(email_list, y_labels=None):
     predictions = rf.predict(X_dense)
     return predictions, rf, X, feature_names
 
+def plot_confusion_matrix(y_true, y_pred, model_name, class_labels=None):
+    '''Generate and save confusion matrix plot'''
+    cm = confusion_matrix(y_true, y_pred)
+    
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                xticklabels=class_labels, yticklabels=class_labels,
+                cbar_kws={'label': 'Count'})
+    plt.title(f'Confusion Matrix - {model_name}', fontsize=16, fontweight='bold')
+    plt.ylabel('True Label', fontsize=12)
+    plt.xlabel('Predicted Label', fontsize=12)
+    plt.tight_layout()
+    
+    # Save plot
+    filename = f'confusion_matrix_{model_name.replace(" ", "_").lower()}.png'
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    print(f"✓ Saved: {filename}")
+    plt.show()
+    
+    return cm
+
+def plot_metrics_comparison(results, model_names):
+    '''Generate and save metrics comparison plot'''
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig.suptitle('Model Performance Comparison: Random Forest vs NMF', 
+                 fontsize=16, fontweight='bold', y=1.00)
+    
+    metrics = ['accuracy', 'precision', 'recall', 'f1_score']
+    metric_labels = ['Accuracy', 'Precision', 'Recall', 'F1-Score']
+    axes = axes.flatten()
+    
+    for idx, (metric, label) in enumerate(zip(metrics, metric_labels)):
+        values = [results[model].get(metric, 0) for model in model_names]
+        colors = ['#2ecc71', '#3498db']
+        
+        bars = axes[idx].bar(model_names, values, color=colors, alpha=0.8, edgecolor='black', linewidth=1.5)
+        axes[idx].set_ylabel('Score', fontsize=11)
+        axes[idx].set_title(label, fontsize=12, fontweight='bold')
+        axes[idx].set_ylim([0, 1])
+        axes[idx].grid(axis='y', alpha=0.3, linestyle='--')
+        
+        # Add value labels on bars
+        for bar in bars:
+            height = bar.get_height()
+            axes[idx].text(bar.get_x() + bar.get_width()/2., height,
+                          f'{height:.4f}',
+                          ha='center', va='bottom', fontsize=10, fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('metrics_comparison.png', dpi=300, bbox_inches='tight')
+    print("✓ Saved: metrics_comparison.png")
+    plt.show()
+
+def plot_model_performance_radar(results, model_names):
+    '''Generate and save radar chart for model comparison'''
+    metrics = ['accuracy', 'precision', 'recall', 'f1_score']
+    
+    angles = np.linspace(0, 2 * np.pi, len(metrics), endpoint=False).tolist()
+    angles += angles[:1]  # Complete the circle
+    
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
+    
+    colors = ['#2ecc71', '#3498db']
+    
+    for idx, model in enumerate(model_names):
+        values = [results[model].get(metric, 0) for metric in metrics]
+        values += values[:1]  # Complete the circle
+        
+        ax.plot(angles, values, 'o-', linewidth=2, label=model, color=colors[idx])
+        ax.fill(angles, values, alpha=0.15, color=colors[idx])
+    
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(['Accuracy', 'Precision', 'Recall', 'F1-Score'], fontsize=11)
+    ax.set_ylim(0, 1)
+    ax.set_title('Model Performance Radar Chart', fontsize=14, fontweight='bold', pad=20)
+    ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1), fontsize=11)
+    ax.grid(True, linestyle='--', alpha=0.7)
+    
+    plt.tight_layout()
+    plt.savefig('radar_chart_comparison.png', dpi=300, bbox_inches='tight')
+    print("✓ Saved: radar_chart_comparison.png")
+    plt.show()
+
+def plot_feature_importance(rf_model, feature_names, top_n=15):
+    '''Plot top N important features from Random Forest'''
+    importances = rf_model.feature_importances_
+    indices = np.argsort(importances)[-top_n:]
+    
+    plt.figure(figsize=(12, 8))
+    plt.barh(range(len(indices)), importances[indices], color='#3498db', edgecolor='black', linewidth=1.5)
+    plt.yticks(range(len(indices)), [feature_names[i] for i in indices], fontsize=10)
+    plt.xlabel('Feature Importance', fontsize=12, fontweight='bold')
+    plt.title(f'Top {top_n} Most Important Features - Random Forest', fontsize=14, fontweight='bold')
+    plt.grid(axis='x', alpha=0.3, linestyle='--')
+    
+    for i, v in enumerate(importances[indices]):
+        plt.text(v + 0.001, i, f'{v:.4f}', va='center', fontsize=9)
+    
+    plt.tight_layout()
+    plt.savefig('feature_importance_rf.png', dpi=300, bbox_inches='tight')
+    print("✓ Saved: feature_importance_rf.png")
+    plt.show()
+
+def plot_rocauc_curves(y_test, rf_proba, class_labels):
+    '''Plot ROC-AUC curves for Random Forest (if binary classification)'''
+    if len(np.unique(y_test)) == 2:
+        from sklearn.metrics import roc_curve, auc
+        
+        fpr, tpr, _ = roc_curve(y_test, rf_proba[:, 1])
+        roc_auc = auc(fpr, tpr)
+        
+        plt.figure(figsize=(8, 6))
+        plt.plot(fpr, tpr, color='#3498db', lw=2, label=f'ROC curve (AUC = {roc_auc:.4f})')
+        plt.plot([0, 1], [0, 1], color='gray', lw=2, linestyle='--', label='Random Classifier')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate', fontsize=12)
+        plt.ylabel('True Positive Rate', fontsize=12)
+        plt.title('ROC-AUC Curve - Random Forest', fontsize=14, fontweight='bold')
+        plt.legend(loc='lower right', fontsize=11)
+        plt.grid(alpha=0.3, linestyle='--')
+        plt.tight_layout()
+        plt.savefig('roc_auc_curve.png', dpi=300, bbox_inches='tight')
+        print("✓ Saved: roc_auc_curve.png")
+        plt.show()
+
 def evaluate_models(email_list, true_labels=None):
     '''
-    Evaluate both NMF and Random Forest models.
+    Evaluate both NMF and Random Forest models with visualization.
     For Random Forest, true_labels must be provided.
     '''
     results = {}
@@ -109,11 +239,12 @@ def evaluate_models(email_list, true_labels=None):
     if true_labels is not None:
         # Convert categorical labels to numeric if needed
         if isinstance(true_labels[0], str):
-            unique_labels = list(set(true_labels))
+            unique_labels = sorted(list(set(true_labels)))
             label_to_idx = {label: idx for idx, label in enumerate(unique_labels)}
             true_labels_numeric = [label_to_idx[label] for label in true_labels]
             nmf_categories_numeric = [label_to_idx.get(cat, 0) for cat in nmf_categories]
         else:
+            unique_labels = sorted(list(set(true_labels)))
             true_labels_numeric = true_labels
             nmf_categories_numeric = nmf_categories
         
@@ -133,7 +264,8 @@ def evaluate_models(email_list, true_labels=None):
             'recall': nmf_recall,
             'f1_score': nmf_f1,
             'model': nmf_model,
-            'predictions': nmf_categories
+            'predictions': nmf_categories_numeric,
+            'cm': confusion_matrix(true_labels_numeric, nmf_categories_numeric)
         }
     else:
         print("NMF is unsupervised - cannot compute supervised metrics without true labels.")
@@ -156,10 +288,11 @@ def evaluate_models(email_list, true_labels=None):
         X_dense = X.toarray()
         
         if isinstance(true_labels[0], str):
-            unique_labels = list(set(true_labels))
+            unique_labels = sorted(list(set(true_labels)))
             label_to_idx = {label: idx for idx, label in enumerate(unique_labels)}
             y_numeric = [label_to_idx[label] for label in true_labels]
         else:
+            unique_labels = sorted(list(set(true_labels)))
             y_numeric = true_labels
         
         X_train, X_test, y_train, y_test = train_test_split(
@@ -172,6 +305,7 @@ def evaluate_models(email_list, true_labels=None):
         
         # Make predictions
         rf_predictions = rf.predict(X_test)
+        rf_proba = rf.predict_proba(X_test)
         
         rf_accuracy = accuracy_score(y_test, rf_predictions)
         rf_precision = precision_score(y_test, rf_predictions, average='weighted', zero_division=0)
@@ -189,14 +323,23 @@ def evaluate_models(email_list, true_labels=None):
             'recall': rf_recall,
             'f1_score': rf_f1,
             'model': rf,
-            'predictions': rf_predictions
+            'predictions': rf_predictions,
+            'y_test': y_test,
+            'rf_proba': rf_proba,
+            'cm': confusion_matrix(y_test, rf_predictions),
+            'feature_names': feature_names
         }
     
-    # Model Comparison
+    # Generate Visualizations
+    print("\n" + "="*60)
+    print("Generating Visualizations...")
+    print("="*60)
+    
     if true_labels is not None and 'Random Forest' in results:
-        print("\n" + "="*60)
+        # Comparison metrics table
+        print("\n" + "-"*60)
         print("Model Comparison Summary")
-        print("="*60)
+        print("-"*60)
         
         comparison_df = pd.DataFrame({
             'NMF': [
@@ -214,6 +357,29 @@ def evaluate_models(email_list, true_labels=None):
         }, index=['Accuracy', 'Precision', 'Recall', 'F1-Score'])
         
         print(comparison_df.to_string())
+        print()
+        
+        # Plot confusion matrices
+        plot_confusion_matrix(results['NMF']['predictions'], 
+                            results['NMF']['predictions'], 
+                            'NMF', 
+                            unique_labels)
+        
+        plot_confusion_matrix(results['Random Forest']['y_test'], 
+                            results['Random Forest']['predictions'], 
+                            'Random Forest', 
+                            unique_labels)
+        
+        # Plot metrics comparison
+        plot_metrics_comparison(results, ['NMF', 'Random Forest'])
+        
+        # Plot radar chart
+        plot_model_performance_radar(results, ['NMF', 'Random Forest'])
+        
+        # Plot feature importance (only for RF)
+        plot_feature_importance(results['Random Forest']['model'], 
+                              results['Random Forest']['feature_names'], 
+                              top_n=15)
         
         # Determine better model
         print("\n" + "-"*60)
@@ -226,10 +392,10 @@ def evaluate_models(email_list, true_labels=None):
     
     return results
 
-def print_detailed_report(true_labels, predictions, model_name):
+def print_detailed_report(y_true, y_pred, model_name):
     '''Print detailed classification report'''
     print(f"\nDetailed Classification Report for {model_name}:")
-    print(classification_report(true_labels, predictions))
+    print(classification_report(y_true, y_pred))
 
 # Example usage
 if __name__ == "__main__":
@@ -245,12 +411,24 @@ if __name__ == "__main__":
         {'body': 'customer complaint about product quality needs resolution'},
         {'body': 'quarterly earnings report and financial projections attached'},
         {'body': 'system maintenance scheduled for sunday evening downtime expected'},
+        {'body': 'meeting notes from yesterday team discussion'},
+        {'body': 'billing statement for current month services'},
+        {'body': 'special promotional offer valid until end of week'},
+        {'body': 'team building event next month rsvp required'},
+        {'body': 'contract renewal reminder action needed soon'},
+        {'body': 'bug fix release addresses critical vulnerability'},
+        {'body': 'customer support ticket needs immediate attention'},
+        {'body': 'budget approval required for q4 expenses'},
+        {'body': 'office party celebration this friday'},
+        {'body': 'software update improves user experience'},
     ]
     
     # Sample labels (Work, Billing, Marketing, Social, Finance, Tech, Support, Finance, Tech, Social)
     sample_labels = ['work', 'billing', 'work', 'marketing', 'social', 
-                     'billing', 'tech', 'support', 'finance', 'tech']
+                     'billing', 'tech', 'support', 'finance', 'tech',
+                     'work', 'billing', 'marketing', 'social', 'work',
+                     'tech', 'support', 'finance', 'social', 'tech']
     
-    print("Running Model Comparison...")
+    print("Running Model Comparison with Visualizations...")
     results = evaluate_models(sample_emails, sample_labels)
     print("\n✓ Evaluation Complete!")
