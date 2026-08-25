@@ -19,8 +19,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from io import BytesIO
 import base64
+import os
 
 nltk.download('stopwords')
+
+# Create plots directory if it doesn't exist
+PLOTS_DIR = 'plots'
+os.makedirs(PLOTS_DIR, exist_ok=True)
 
 # Init stuff
 stop_words = set(stopwords.words('english'))
@@ -109,11 +114,11 @@ def plot_confusion_matrix(y_true, y_pred, model_name, class_labels=None):
     plt.xlabel('Predicted Label', fontsize=12)
     plt.tight_layout()
     
-    # Save plot
-    filename = f'confusion_matrix_{model_name.replace(" ", "_").lower()}.png'
+    # Save plot in plots directory
+    filename = os.path.join(PLOTS_DIR, f'confusion_matrix_{model_name.replace(" ", "_").lower()}.png')
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     print(f"✓ Saved: {filename}")
-    plt.show()
+    plt.close()
     
     return cm
 
@@ -145,9 +150,10 @@ def plot_metrics_comparison(results, model_names):
                           ha='center', va='bottom', fontsize=10, fontweight='bold')
     
     plt.tight_layout()
-    plt.savefig('metrics_comparison.png', dpi=300, bbox_inches='tight')
-    print("✓ Saved: metrics_comparison.png")
-    plt.show()
+    filename = os.path.join(PLOTS_DIR, 'metrics_comparison.png')
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    print(f"✓ Saved: {filename}")
+    plt.close()
 
 def plot_model_performance_radar(results, model_names):
     '''Generate and save radar chart for model comparison'''
@@ -175,9 +181,10 @@ def plot_model_performance_radar(results, model_names):
     ax.grid(True, linestyle='--', alpha=0.7)
     
     plt.tight_layout()
-    plt.savefig('radar_chart_comparison.png', dpi=300, bbox_inches='tight')
-    print("✓ Saved: radar_chart_comparison.png")
-    plt.show()
+    filename = os.path.join(PLOTS_DIR, 'radar_chart_comparison.png')
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    print(f"✓ Saved: {filename}")
+    plt.close()
 
 def plot_feature_importance(rf_model, feature_names, top_n=15):
     '''Plot top N important features from Random Forest'''
@@ -195,9 +202,10 @@ def plot_feature_importance(rf_model, feature_names, top_n=15):
         plt.text(v + 0.001, i, f'{v:.4f}', va='center', fontsize=9)
     
     plt.tight_layout()
-    plt.savefig('feature_importance_rf.png', dpi=300, bbox_inches='tight')
-    print("✓ Saved: feature_importance_rf.png")
-    plt.show()
+    filename = os.path.join(PLOTS_DIR, 'feature_importance_rf.png')
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    print(f"✓ Saved: {filename}")
+    plt.close()
 
 def plot_rocauc_curves(y_test, rf_proba, class_labels):
     '''Plot ROC-AUC curves for Random Forest (if binary classification)'''
@@ -218,9 +226,59 @@ def plot_rocauc_curves(y_test, rf_proba, class_labels):
         plt.legend(loc='lower right', fontsize=11)
         plt.grid(alpha=0.3, linestyle='--')
         plt.tight_layout()
-        plt.savefig('roc_auc_curve.png', dpi=300, bbox_inches='tight')
-        print("✓ Saved: roc_auc_curve.png")
-        plt.show()
+        filename = os.path.join(PLOTS_DIR, 'roc_auc_curve.png')
+        plt.savefig(filename, dpi=300, bbox_inches='tight')
+        print(f"✓ Saved: {filename}")
+        plt.close()
+
+def plot_model_comparison_table(results):
+    '''Generate and save comparison metrics as a visual table'''
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.axis('tight')
+    ax.axis('off')
+    
+    comparison_data = []
+    metrics_names = ['Accuracy', 'Precision', 'Recall', 'F1-Score']
+    metric_keys = ['accuracy', 'precision', 'recall', 'f1_score']
+    
+    for metric_name, metric_key in zip(metrics_names, metric_keys):
+        row = [metric_name]
+        for model in ['NMF', 'Random Forest']:
+            if model in results:
+                value = results[model].get(metric_key, 0)
+                row.append(f'{value:.4f}')
+            else:
+                row.append('N/A')
+        comparison_data.append(row)
+    
+    table = ax.table(cellText=comparison_data, 
+                    colLabels=['Metric', 'NMF', 'Random Forest'],
+                    cellLoc='center',
+                    loc='center',
+                    colWidths=[0.25, 0.25, 0.25])
+    
+    table.auto_set_font_size(False)
+    table.set_fontsize(11)
+    table.scale(1, 2.5)
+    
+    # Style header
+    for i in range(3):
+        table[(0, i)].set_facecolor('#3498db')
+        table[(0, i)].set_text_props(weight='bold', color='white')
+    
+    # Alternate row colors
+    for i in range(1, len(comparison_data) + 1):
+        for j in range(3):
+            if i % 2 == 0:
+                table[(i, j)].set_facecolor('#ecf0f1')
+            else:
+                table[(i, j)].set_facecolor('#ffffff')
+    
+    plt.title('Model Performance Metrics Comparison', fontsize=14, fontweight='bold', pad=20)
+    filename = os.path.join(PLOTS_DIR, 'metrics_table.png')
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    print(f"✓ Saved: {filename}")
+    plt.close()
 
 def evaluate_models(email_list, true_labels=None):
     '''
@@ -373,6 +431,9 @@ def evaluate_models(email_list, true_labels=None):
         # Plot metrics comparison
         plot_metrics_comparison(results, ['NMF', 'Random Forest'])
         
+        # Plot metrics table
+        plot_model_comparison_table(results)
+        
         # Plot radar chart
         plot_model_performance_radar(results, ['NMF', 'Random Forest'])
         
@@ -389,6 +450,10 @@ def evaluate_models(email_list, true_labels=None):
         else:
             print("✓ NMF performs better or equally (higher F1-Score)")
             print(f"  Difference: {(results['NMF']['f1_score'] - results['Random Forest']['f1_score'])*100:.2f}%")
+        
+        print("\n" + "="*60)
+        print(f"All plots saved to '{PLOTS_DIR}/' directory!")
+        print("="*60)
     
     return results
 
